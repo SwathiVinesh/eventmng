@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Universality of Logic Gates & De Morgan Equivalents</title>
+  <style>
+    :root {
+      --bg-color: #0d1117;
+      --card-bg: #161b22;
+      --border-color: #30363d;
+      --accent-blue: #58a6ff;
+      --accent-green: #3fb950;
+      --accent-purple: #bc8cff;
+      --text-main: #c9d1d9;
+      --text-bright: #f0f6fc;
+      --gate-fill: #21262d;
+      --gate-stroke: #58a6ff;
+      --signal-active: #3fb950;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+
+    body {
+      background-color: var(--bg-color);
+      color: var(--text-main);
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    /* Presentation Header */
+    header {
+      padding: 16px 32px;
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: rgba(22, 27, 34, 0.8);
+      backdrop-filter: blur(8px);
+    }
+
+    header h1 {
+      font-size: 1.25rem;
+      color: var(--text-bright);
+      font-weight: 600;
+    }
+
+    .slide-counter {
+      font-size: 0.9rem;
+      color: #8b949e;
+      background: #21262d;
+      padding: 4px 12px;
+      border-radius: 12px;
+      border: 1px solid var(--border-color);
+    }
+
+    /* Main Container */
+    .viewport {
+      flex: 1;
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 40px;
+    }
+
+    .slide {
+      position: absolute;
+      width: 100%;
+      max-width: 1100px;
+      height: 85%;
+      opacity: 0;
+      transform: translateY(20px) scale(0.98);
+      pointer-events: none;
+      transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+
+    .slide.active {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+      pointer-events: auto;
+    }
+
+    .slide-title {
+      font-size: 2rem;
+      color: var(--text-bright);
+      margin-bottom: 8px;
+    }
+
+    .slide-subtitle {
+      font-size: 1.1rem;
+      color: #8b949e;
+      margin-bottom: 32px;
+    }
+
+    /* Cards Layout */
+    .grid-container {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 24px;
+      width: 100%;
+    }
+
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+      transition: transform 0.3s ease, border-color 0.3s ease;
+    }
+
+    .card:hover {
+      transform: translateY(-4px);
+      border-color: var(--accent-blue);
+    }
+
+    .card-title {
+      font-size: 1.1rem;
+      color: var(--accent-blue);
+      margin-bottom: 16px;
+      font-weight: 600;
+    }
+
+    .equation {
+      font-family: "Fira Code", "Courier New", monospace;
+      background: #0d1117;
+      padding: 8px 16px;
+      border-radius: 6px;
+      color: var(--accent-purple);
+      margin-top: 16px;
+      font-size: 1.05rem;
+      border: 1px solid var(--border-color);
+    }
+
+    /* SVG Circuit Styling & Animation */
+    svg.circuit-diagram {
+      width: 100%;
+      height: 120px;
+      overflow: visible;
+    }
+
+    .gate {
+      fill: var(--gate-fill);
+      stroke: var(--gate-stroke);
+      stroke-width: 2;
+    }
+
+    .wire {
+      fill: none;
+      stroke: #8b949e;
+      stroke-width: 2;
+      stroke-linecap: round;
+    }
+
+    .wire-active {
+      stroke: var(--accent-green);
+      stroke-dasharray: 8 4;
+      animation: flow 1.5s linear infinite;
+    }
+
+    @keyframes flow {
+      0% { stroke-dashoffset: 24; }
+      100% { stroke-dashoffset: 0; }
+    }
+
+    .node {
+      fill: var(--accent-blue);
+    }
+
+    /* Navigation Controls */
+    footer {
+      padding: 20px 32px;
+      border-top: 1px solid var(--border-color);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: var(--card-bg);
+    }
+
+    .nav-btn {
+      background: #21262d;
+      color: var(--text-bright);
+      border: 1px solid var(--border-color);
+      padding: 10px 24px;
+      border-radius: 8px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .nav-btn:hover:not(:disabled) {
+      background: var(--accent-blue);
+      color: #0d1117;
+      border-color: var(--accent-blue);
+    }
+
+    .nav-btn:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+
+    /* Equivalence Table */
+    .equiv-table {
+      width: 100%;
+      border-collapse: collapse;
+      background: var(--card-bg);
+      border-radius: 12px;
+      overflow: hidden;
+      border: 1px solid var(--border-color);
+    }
+
+    .equiv-table th, .equiv-table td {
+      padding: 16px 20px;
+      text-align: center;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .equiv-table th {
+      background: #21262d;
+      color: var(--accent-blue);
+      font-weight: 600;
+    }
+
+    .equiv-table tr:last-child td {
+      border-bottom: none;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>Digital Logic Fundamentals</h1>
+    <div class="slide-counter" id="slide-counter">Slide 1 of 5</div>
+  </header>
+
+  <div class="viewport">
+
+    <!-- Slide 1: Title -->
+    <div class="slide active" id="slide-1">
+      <div style="text-align: center;">
+        <h1 style="font-size: 3rem; color: var(--text-bright); margin-bottom: 16px;">Universality of Logic Gates</h1>
+        <p class="slide-subtitle" style="font-size: 1.3rem;">Constructing NOT, OR, and AND Functions using NOR and NAND Gates</p>
+        <div style="display: flex; justify-content: center; gap: 16px; margin-top: 24px;">
+          <span style="background: rgba(88, 166, 255, 0.15); color: var(--accent-blue); padding: 8px 16px; border-radius: 20px; border: 1px solid var(--accent-blue);">NOR Universality</span>
+          <span style="background: rgba(63, 185, 80, 0.15); color: var(--accent-green); padding: 8px 16px; border-radius: 20px; border: 1px solid var(--accent-green);">NAND Universality</span>
+          <span style="background: rgba(188, 140, 255, 0.15); color: var(--accent-purple); padding: 8px 16px; border-radius: 20px; border: 1px solid var(--accent-purple);">De Morgan Equivalents</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Slide 2: NOR Gates -->
+    <div class="slide" id="slide-2">
+      <h2 class="slide-title">Universality of NOR Gate</h2>
+      <p class="slide-subtitle">A NOR gate alone can synthesize all standard logic operations.</p>
+      
+      <div class="grid-container">
+        <!-- NOT from NOR -->
+        <div class="card">
+          <div class="card-title">1. INVERTER (NOT)</div>
+          <svg class="circuit-diagram" viewBox="0 0 240 100">
+            <!-- Inputs tied -->
+            <path class="wire wire-active" d="M 20 50 L 50 50 L 50 35 L 70 35" />
+            <path class="wire wire-active" d="M 50 50 L 50 65 L 70 65" />
+            <circle cx="50" cy="50" r="4" class="node" />
+            <!-- NOR Gate -->
+            <path class="gate" d="M 60 20 Q 80 50 60 80 Q 100 80 120 50 Q 100 20 60 20 Z" />
+            <circle cx="126" cy="50" r="5" class="gate" />
+            <!-- Output -->
+            <path class="wire wire-active" d="M 131 50 L 180 50" />
+            <text x="10" y="55" fill="#fff" font-size="14">A</text>
+            <text x="190" y="55" fill="#3fb950" font-size="14">A'</text>
+          </svg>
+          <div class="equation">X = (A + A)' = A'</div>
+        </div>
+
+        <!-- OR from NOR -->
+        <div class="card">
+          <div class="card-title">2. OR Gate</div>
+          <svg class="circuit-diagram" viewBox="0 0 280 100">
+            <!-- Inputs -->
+            <path class="wire" d="M 10 35 L 40 35" />
+            <path class="wire" d="M 10 65 L 40 65" />
+            <!-- Gate 1 (NOR) -->
+            <path class="gate" d="M 30 20 Q 50 50 30 80 Q 70 80 90 50 Q 70 20 30 20 Z" />
+            <circle cx="96" cy="50" r="5" class="gate" />
+            <!-- Connection to Gate 2 -->
+            <path class="wire wire-active" d="M 101 50 L 130 50 L 130 35 L 140 35" />
+            <path class="wire wire-active" d="M 130 50 L 130 65 L 140 65" />
+            <!-- Gate 2 (Inverter-wired NOR) -->
+            <path class="gate" d="M 130 20 Q 150 50 130 80 Q 170 80 190 50 Q 170 20 130 20 Z" />
+            <circle cx="196" cy="50" r="5" class="gate" />
+            <path class="wire wire-active" d="M 201 50 L 240 50" />
+            <text x="250" y="55" fill="#3fb950" font-size="14">A+B</text>
+          </svg>
+          <div class="equation">X = ((A + B)')' = A + B</div>
+        </div>
+
+        <!-- AND from NOR -->
+        <div class="card">
+          <div class="card-title">3. AND Gate</div>
+          <svg class="circuit-diagram" viewBox="0 0 280 120">
+            <!-- Input A Inverter -->
+            <path class="wire" d="M 10 25 L 30 25" />
+            <path class="gate" d="M 20 10 Q 35 25 20 40 Q 50 40 65 25 Q 50 10 20 10 Z" />
+            <circle cx="70" cy="25" r="4" class="gate" />
+            <!-- Input B Inverter -->
+            <path class="wire" d="M 10 95 L 30 95" />
+            <path class="gate" d="M 20 80 Q 35 95 20 110 Q 50 110 65 95 Q 50 80 20 80 Z" />
+            <circle cx="70" cy="95" r="4" class="gate" />
+            <!-- Final NOR -->
+            <path class="wire wire-active" d="M 74 25 L 130 25 L 130 45 L 140 45" />
+            <path class="wire wire-active" d="M 74 95 L 130 95 L 130 75 L 140 75" />
+            <path class="gate" d="M 130 30 Q 150 60 130 90 Q 170 90 190 60 Q 170 30 130 30 Z" />
+            <circle cx="196" cy="60" r="5" class="gate" />
+            <path class="wire wire-active" d="M 201 60 L 240 60" />
+            <text x="245" y="65" fill="#3fb950" font-size="14">A·B</text>
+          </svg>
+          <div class="equation">X = (A' + B')' = A · B</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Slide 3: NAND Gates -->
+    <div class="slide" id="slide-3">
+      <h2 class="slide-title">Universality of NAND Gate</h2>
+      <p class="slide-subtitle">Constructing logic functions using pure NAND architecture.</p>
+      
+      <div class="grid-container">
+        <!-- NOT from NAND -->
+        <div class="card">
+          <div class="card-title">1. INVERTER (NOT)</div>
+          <svg class="circuit-diagram" viewBox="0 0 240 100">
+            <path class="wire wire-active" d="M 20 50 L 50 50 L 50 35 L 70 35" />
+            <path class="wire wire-active" d="M 50 50 L 50 65 L 70 65" />
+            <circle cx="50" cy="50" r="4" class="node" />
+            <!-- NAND Gate -->
+            <path class="gate" d="M 70 20 L 100 20 A 30 30 0 0 1 100 80 L 70 80 Z" />
+            <circle cx="135" cy="50" r="5" class="gate" />
+            <path class="wire wire-active" d="M 140 50 L 180 50" />
+            <text x="10" y="55" fill="#fff" font-size="14">A</text>
+            <text x="190" y="55" fill="#3fb950" font-size="14">A'</text>
+          </svg>
+          <div class="equation">X = (A · A)' = A'</div>
+        </div>
+
+        <!-- AND from NAND -->
+        <div class="card">
+          <div class="card-title">2. AND Gate</div>
+          <svg class="circuit-diagram" viewBox="0 0 280 100">
+            <path class="wire" d="M 10 35 L 40 35" />
+            <path class="wire" d="M 10 65 L 40 65" />
+            <!-- NAND 1 -->
+            <path class="gate" d="M 40 20 L 70 20 A 30 30 0 0 1 70 80 L 40 80 Z" />
+            <circle cx="105" cy="50" r="5" class="gate" />
+            <!-- Connections -->
+            <path class="wire wire-active" d="M 110 50 L 130 50 L 130 35 L 140 35" />
+            <path class="wire wire-active" d="M 130 50 L 130 65 L 140 65" />
+            <!-- NAND 2 (Inverter) -->
+            <path class="gate" d="M 140 20 L 170 20 A 30 30 0 0 1 170 80 L 140 80 Z" />
+            <circle cx="205" cy="50" r="5" class="gate" />
+            <path class="wire wire-active" d="M 210 50 L 240 50" />
+            <text x="250" y="55" fill="#3fb950" font-size="14">A·B</text>
+          </svg>
+          <div class="equation">X = ((A · B)')' = A · B</div>
+        </div>
+
+        <!-- OR from NAND -->
+        <div class="card">
+          <div class="card-title">3. OR Gate</div>
+          <svg class="circuit-diagram" viewBox="0 0 280 120">
+            <!-- NAND A -->
+            <path class="gate" d="M 20 10 L 45 10 A 15 15 0 0 1 45 40 L 20 40 Z" />
+            <circle cx="63" cy="25" r="3" class="gate" />
+            <!-- NAND B -->
+            <path class="gate" d="M 20 80 L 45 80 A 15 15 0 0 1 45 110 L 20 110 Z" />
+            <circle cx="63" cy="95" r="3" class="gate" />
+            <!-- Output NAND -->
+            <path class="wire wire-active" d="M 66 25 L 120 25 L 120 45 L 130 45" />
+            <path class="wire wire-active" d="M 66 95 L 120 95 L 120 75 L 130 75" />
+            <path class="gate" d="M 130 30 L 160 30 A 30 30 0 0 1 160 90 L 130 90 Z" />
+            <circle cx="195" cy="60" r="5" class="gate" />
+            <path class="wire wire-active" d="M 200 60 L 240 60" />
+            <text x="245" y="65" fill="#3fb950" font-size="14">A+B</text>
+          </svg>
+          <div class="equation">X = (A' · B')' = A + B</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Slide 4: Standard vs Alternate Symbols -->
+    <div class="slide" id="slide-4">
+      <h2 class="slide-title">Standard & Alternate Gate Symbols</h2>
+      <p class="slide-subtitle">Applying De Morgan's Laws to represent gates with Active-Low logic.</p>
+
+      <table class="equiv-table">
+        <thead>
+          <tr>
+            <th>Gate Name</th>
+            <th>Standard Symbol & Expression</th>
+            <th>Equivalence</th>
+            <th>Alternate Symbol (De Morgan)</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td style="font-weight: 600; color: var(--text-bright);">AND</td>
+            <td><code class="equation">Y = A · B</code></td>
+            <td style="color: var(--accent-blue); font-size: 1.4rem;">≡</td>
+            <td><code class="equation">Y = (A' + B')'</code> (Negative-OR)</td>
+          </tr>
+          <tr>
+            <td style="font-weight: 600; color: var(--text-bright);">OR</td>
+            <td><code class="equation">Y = A + B</code></td>
+            <td style="color: var(--accent-blue); font-size: 1.4rem;">≡</td>
+            <td><code class="equation">Y = (A' · B')'</code> (Negative-AND)</td>
+          </tr>
+          <tr>
+            <td style="font-weight: 600; color: var(--text-bright);">NAND</td>
+            <td><code class="equation">Y = (A · B)'</code></td>
+            <td style="color: var(--accent-blue); font-size: 1.4rem;">≡</td>
+            <td><code class="equation">Y = A' + B'</code> (Bubbled OR)</td>
+          </tr>
+          <tr>
+            <td style="font-weight: 600; color: var(--text-bright);">NOR</td>
+            <td><code class="equation">Y = (A + B)'</code></td>
+            <td style="color: var(--accent-blue); font-size: 1.4rem;">≡</td>
+            <td><code class="equation">Y = A' · B'</code> (Bubbled AND)</td>
+          </tr>
+          <tr>
+            <td style="font-weight: 600; color: var(--text-bright);">INVERTER</td>
+            <td><code class="equation">Y = A'</code></td>
+            <td style="color: var(--accent-blue); font-size: 1.4rem;">≡</td>
+            <td><code class="equation">Y = A'</code> (Active-Low Inverter)</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Slide 5: Key Takeaways -->
+    <div class="slide" id="slide-5">
+      <h2 class="slide-title">Summary & Circuit Optimization</h2>
+      <div class="grid-container" style="grid-template-columns: 1fr 1fr;">
+        <div class="card" style="align-items: flex-start;">
+          <h3 style="color: var(--accent-blue); margin-bottom: 12px;">Universal Gate Advantages</h3>
+          <ul style="line-height: 1.8; padding-left: 20px;">
+            <li><strong>IC Cost Reduction:</strong> Entire circuits can be fabricated using a single chip type (e.g., 7400 Quad NAND or 7402 Quad NOR).</li>
+            <li><strong>Simplified Inventory:</strong> Fewer part numbers required during mass manufacturing.</li>
+            <li><strong>Standardized Propagation Delays:</strong> Uniform gate timing across complex logic trees.</li>
+          </ul>
+        </div>
+        <div class="card" style="align-items: flex-start;">
+          <h3 style="color: var(--accent-green); margin-bottom: 12px;">De Morgan's Conversion Rules</h3>
+          <ul style="line-height: 1.8; padding-left: 20px;">
+            <li><strong>NAND Gate</strong> $\equiv$ Inverted-Input OR Gate (Negative-OR).</li>
+            <li><strong>NOR Gate</strong> $\equiv$ Inverted-Input AND Gate (Negative-AND).</li>
+            <li><strong>Bubble Matching:</strong> Connect output bubbles directly to input bubbles to simplify schematic reading.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <footer>
+    <button class="nav-btn" id="prev-btn" onclick="changeSlide(-1)" disabled>Previous</button>
+    <span style="color: #8b949e; font-size: 0.85rem;">Use ← and → arrow keys to navigate</span>
+    <button class="nav-btn" id="next-btn" onclick="changeSlide(1)">Next</button>
+  </footer>
+
+  <script>
+    let currentSlide = 1;
+    const totalSlides = 5;
+
+    function changeSlide(direction) {
+      const newSlide = currentSlide + direction;
+      if (newSlide >= 1 && newSlide <= totalSlides) {
+        document.getElementById(`slide-${currentSlide}`).classList.remove('active');
+        currentSlide = newSlide;
+        document.getElementById(`slide-${currentSlide}`).classList.add('active');
+        updateControls();
+      }
+    }
+
+    function updateControls() {
+      document.getElementById('slide-counter').innerText = `Slide ${currentSlide} of ${totalSlides}`;
+      document.getElementById('prev-btn').disabled = (currentSlide === 1);
+      document.getElementById('next-btn').disabled = (currentSlide === totalSlides);
+    }
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowRight' || e.key === ' ') {
+        changeSlide(1);
+      } else if (e.key === 'ArrowLeft') {
+        changeSlide(-1);
+      }
+    });
+  </script>
+</body>
+</html>
